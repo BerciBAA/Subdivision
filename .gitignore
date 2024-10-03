@@ -1,15 +1,33 @@
 # Build output folders
 Debug/
+Release/
 x64/
+x86/
 
 # User-specific files
 *.vcxproj.user
+*.vcxproj.filters
+*.sln.docstates
 
 # Build artifacts
 *.obj
 *.exe
 *.dll
 *.pdb
+*.lib
+*.ilk
+*.idb
+*.tlog
+*.log
+*.lastbuildstate
+*.sdf
+*.ipch
+*.iobj
+*.ipdb
+
+# Precompiled Headers
+*.gch
+*.pch
 
 # Prerequisites
 *.d
@@ -19,10 +37,6 @@ x64/
 *.lo
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
 
 # Compiled Dynamic libraries
 *.so
@@ -43,3 +57,17 @@ x64/
 *.exe
 *.out
 *.app
+
+# Visual Studio folders
+.vscode/
+.vs/
+*.VC.db
+*.VC.opendb
+
+# Other generated files
+*.cache
+*.log
+*.csproj.user
+
+# Ignore Directories for Visual Studio Code
+.vscode/
