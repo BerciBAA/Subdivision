@@ -1,3 +1,16 @@
+# Build output folders
+Debug/
+x64/
+
+# User-specific files
+*.vcxproj.user
+
+# Build artifacts
+*.obj
+*.exe
+*.dll
+*.pdb
+
 # Prerequisites
 *.d
 
