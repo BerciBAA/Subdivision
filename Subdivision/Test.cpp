@@ -156,20 +156,60 @@ public:
             faceNameIdx++;
         }
 
-        createTwinEdges();
+        createTwinEdges(&halfEdgeNameIdx);
     }
 
-    void createTwinEdges() {
+    void createTwinEdges(int* halfEdgeNameIdx) {
+        bool foundTwin = false;
+        std::vector<HalfEdge*> boundaryHalfEdges;
+
         for (auto* he1 : halfEdges) {
             if (!he1->twin) {
+                foundTwin = false;
                 for (auto* he2 : halfEdges) {
                     if (he1->origin == he2->next->origin && he1->next->origin == he2->origin) {
                         he1->twin = he2;
                         he2->twin = he1;
+                        foundTwin = true;
                         break;
                     }
                 }
+
+                if (!foundTwin) {
+                    std::stringstream boundaryHalfEdgeNameStream;
+                    boundaryHalfEdgeNameStream << "e" << *halfEdgeNameIdx;
+
+                    HalfEdge* boundaryEdge = new HalfEdge(boundaryHalfEdgeNameStream.str());
+
+                    boundaryEdge->origin = he1->next->origin;
+                    boundaryEdge->twin = he1;
+                    he1->twin = boundaryEdge;
+
+                    boundaryEdge->incidentFace = nullptr;
+
+                    boundaryHalfEdges.push_back(boundaryEdge);
+                    (*halfEdgeNameIdx)++;
+                }
             }
+        }
+
+        // Set prev and next for boundary edges
+        for (auto* boundaryHalfEdge : boundaryHalfEdges) {
+            Vertex* origin = boundaryHalfEdge->origin;
+            Vertex* destination = boundaryHalfEdge->twin->origin;
+
+            for (auto* otherBoundaryHalfEdge : boundaryHalfEdges) {
+                
+                if (otherBoundaryHalfEdge->origin == destination)
+                    boundaryHalfEdge->next = otherBoundaryHalfEdge;
+
+                if (otherBoundaryHalfEdge->twin->origin == origin)
+                    boundaryHalfEdge->prev = otherBoundaryHalfEdge;
+            }       
+        }
+
+        for (auto* boundaryHalfEdge : boundaryHalfEdges) {
+            halfEdges.push_back(boundaryHalfEdge);
         }
     }
 
