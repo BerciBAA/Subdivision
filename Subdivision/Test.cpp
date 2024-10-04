@@ -10,17 +10,27 @@
 #include <GL/freeglut.h> 
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 class HalfEdge;
 class Face;
+class Vertex;
 
 // Based on this source: https://jerryyin.info/geometry-processing-algorithms/half-edge/
 class Vertex {
 public:
     float x, y, z;
     HalfEdge* incidentEdge;
+    std::string name;
 
-    Vertex(float x, float y, float z) : x(x), y(y), z(z), incidentEdge(nullptr) {}
+    Vertex(float x, float y, float z, const std::string& name = "") 
+        : x(x), y(y), z(z), incidentEdge(nullptr), name(name) {}
+
+    std::string toString() const {
+        std::stringstream ss;
+        ss << "Vertex " << name << " (" << x << ", " << y << ", " << z << ")";
+        return ss.str();
+    }
 };
 
 class HalfEdge {
@@ -30,16 +40,49 @@ public:
     HalfEdge* next;
     HalfEdge* prev;
     Face* incidentFace;
+    std::string name;
 
-    HalfEdge() : origin(nullptr), twin(nullptr), next(nullptr), prev(nullptr), incidentFace(nullptr) {}
+    HalfEdge(const std::string& name = "") 
+        : origin(nullptr), twin(nullptr), next(nullptr), prev(nullptr), incidentFace(nullptr), name(name) {}
+
+    std::string toString() const;
 };
 
 class Face {
 public:
     HalfEdge* edge;
+    std::string name;
 
-    Face() : edge(nullptr) {}
+    Face(const std::string& name = "") : edge(nullptr), name(name) {}
+
+    std::string toString() const {
+        std::stringstream ss;
+        ss << "Face " << name << " with vertices: ";
+
+        HalfEdge* startEdge = edge;
+        HalfEdge* currEdge = startEdge;
+
+        do {
+            ss << currEdge->origin->name;
+            if (currEdge->next != startEdge) {
+                ss << " -> ";
+            }
+            currEdge = currEdge->next;
+        } while (currEdge != startEdge);
+
+        return ss.str();
+    }
 };
+
+std::string HalfEdge::toString() const {
+    std::stringstream ss;
+    ss << "HalfEdge " << name << " from " << origin->name << std::endl;
+    ss << "twin: " << (twin ? twin->name : "-") << std::endl;
+    ss << "next: " << (next ? next->name : "-") << std::endl;
+    ss << "prev: " << (prev ? prev->name : "-") << std::endl;
+    ss << "face: " << (incidentFace ? incidentFace->name : "-") << std::endl;
+    return ss.str();
+}
 
 class Mesh {
 public:
@@ -50,24 +93,38 @@ public:
 
     Mesh(const std::vector<std::vector<int>>& facesIndices, const std::vector<std::vector<float>>& verticesPos) {
         // Create vertices
+        int vertexNameIdx = 1;
+        int faceNameIdx = 0;
+        int halfEdgeNameIdx = 0;
+
         for (const auto& pos : verticesPos) {
-            vertices.push_back(new Vertex(pos[0], pos[1], pos[2]));
+            std::stringstream vertexNameStream;
+            vertexNameStream << "v" << vertexNameIdx;
+
+            vertices.push_back(new Vertex(pos[0], pos[1], pos[2], vertexNameStream.str() ));
+
+            vertexNameIdx++;
         }
 
         // Create half-edges and faces
         for (const auto& face : facesIndices) {
-            Face* newFace = new Face();
+            std::stringstream faceNameStream;
+            faceNameStream << "f" << faceNameIdx;
+
+            Face* newFace = new Face(faceNameStream.str());
             faces.push_back(newFace);
 
             HalfEdge* prevEdge = nullptr;
             HalfEdge* firstEdge = nullptr;
 
-            // Loop over each vertex index in the face
             for (int i = 0; i < face.size(); ++i) {
+                std::stringstream halfEdgeNameStream;
+                halfEdgeNameStream << "e" << halfEdgeNameIdx;
+
                 int currVertexIdx = face[i] - 1;
                 int nextVertexIdx = face[(i + 1) % face.size()] - 1;
 
-                HalfEdge* edge = new HalfEdge();
+                HalfEdge* edge = new HalfEdge(halfEdgeNameStream.str());
                 edge->origin = vertices[currVertexIdx];
                 edge->incidentFace = newFace;
 
@@ -91,15 +148,18 @@ public:
                 if (!vertices[currVertexIdx]->incidentEdge) {
                     vertices[currVertexIdx]->incidentEdge = edge;
                 }
+
+                halfEdgeNameIdx++;
             }
 
             newFace->edge = firstEdge;
+            faceNameIdx++;
         }
 
-        createTwins();
+        createTwinEdges();
     }
 
-    void createTwins() {
+    void createTwinEdges() {
         for (auto* he1 : halfEdges) {
             if (!he1->twin) {
                 for (auto* he2 : halfEdges) {
@@ -117,6 +177,27 @@ public:
         for (auto* v : vertices) delete v;
         for (auto* he : halfEdges) delete he;
         for (auto* f : faces) delete f;
+    }
+
+    std::string toString() const {
+        std::stringstream ss;
+
+        ss << "Vertices:\n";
+        for (int i = 0; i < vertices.size(); ++i) {
+            ss << vertices[i]->toString() << std::endl;
+        }
+
+        ss << "\nHalfEdges:\n";
+        for (int i = 0; i < halfEdges.size(); ++i) {
+            ss << halfEdges[i]->toString() << std::endl;
+        }
+
+        ss << "\nFaces:\n";
+        for (int i = 0; i < faces.size(); ++i) {
+            ss << faces[i]->toString() << std::endl;
+        }
+
+        return ss.str();
     }
 };
 
@@ -187,7 +268,9 @@ void testHalfEdgeStructure() {
     // Create mesh
     Mesh mesh(faceIndices, vertexPositions);
 
-    std::cout << "Mesh created successfully!" << std::endl;
+    std::cout << "Mesh created successfully:" << std::endl;
+
+    std::cout << mesh.toString();
 }
 
 // Main routine.
