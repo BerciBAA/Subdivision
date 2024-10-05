@@ -10,7 +10,6 @@ x86/
 *.sln.docstates
 
 # Build artifacts
-*.obj
 *.exe
 *.dll
 *.pdb
