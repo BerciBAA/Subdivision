@@ -14,7 +14,15 @@
 #include <fstream>
 #include <string>
 #include <cstdlib> 
-#include <ctime>  
+#include <ctime> 
+#include <cmath>
+
+// Camera movement variables
+float cameraX = 2.0f, cameraY = 2.0f, cameraZ = 1.0f;  // Camera position
+float cameraSpeed = 0.1f;  // Camera movement speed
+
+float lookAtX = 0.0f, lookAtY = 0.0f, lookAtZ = 0.0f;  // Look-at target
+float cameraAngle = 0.0f;  // Angle for rotating the camera around the Y-axis
 
 class HalfEdge;
 class Face;
@@ -261,7 +269,6 @@ void resize(int w, int h)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    //MEGTALÁN EZT IS KELL MÓKOLNI DÁVID
     glOrtho(-10.0, 10.0, -10.0, 10.0, -10.0, 10.0);
 
     glMatrixMode(GL_MODELVIEW);
@@ -271,14 +278,45 @@ void resize(int w, int h)
 // Keyboard input processing routine.
 void keyInput(unsigned char key, int x, int y)
 {
-	switch (key)
-	{
-	case 27:
-		exit(0);
-		break;
-	default:
-		break;
-	}
+    switch (key)
+    {
+    case 27:
+        exit(0);
+        break;
+
+    case 'w':  // Move forward
+        cameraX += cameraSpeed * sin(cameraAngle);
+        cameraZ -= cameraSpeed * cos(cameraAngle);
+        break;
+
+    case 's':  // Move backward
+        cameraX -= cameraSpeed * sin(cameraAngle);
+        cameraZ += cameraSpeed * cos(cameraAngle);
+        break;
+
+    case 'a':  // Move left
+        cameraX -= cameraSpeed * cos(cameraAngle);
+        cameraZ -= cameraSpeed * sin(cameraAngle);
+        break;
+
+    case 'd':  // Move right
+        cameraX += cameraSpeed * cos(cameraAngle);
+        cameraZ += cameraSpeed * sin(cameraAngle);
+        break;
+
+    case 'q':  // Rotate left
+        cameraAngle -= 0.1f;
+        break;
+
+    case 'e':  // Rotate right
+        cameraAngle += 0.1f;
+        break;
+
+    default:
+        break;
+    }
+
+    glutPostRedisplay();  // Request a redraw after movement
 }
 
 void loadOBJ(const std::string& filename, std::vector<std::vector<float>>& verticesPos, std::vector<std::vector<int>>& facesIndices) {
@@ -352,10 +390,14 @@ void drawScene(void) {
  glClear(GL_COLOR_BUFFER_BIT);
 
     glLoadIdentity();
-    //EZT KELL ITT MÓKOLNI DÁVID EZT
-    gluLookAt(2.0, 2.0, 1.0,  // Kamera pozíciója kicsit felülrõl
-              0.0, 0.0, 0.0,  // Középpont
-              0.0, 1.0, 0.0); // Felfelé irány (Y tengely)
+
+    //gluLookAt(2.0, 2.0, 1.0,  // Kamera pozíciója kicsit felülrõl
+    //          0.0, 0.0, 0.0,  // Középpont
+    //          0.0, 1.0, 0.0); // Felfelé irány (Y tengely)
+
+    gluLookAt(cameraX, cameraY, cameraZ,
+        cameraX + sin(cameraAngle), lookAtY, cameraZ - cos(cameraAngle),
+        0.0, 1.0, 0.0);
 
     if (meshPtr != nullptr) {
         renderMesh(*meshPtr);
@@ -401,7 +443,7 @@ void testHalfEdgeStructure(const std::string& objFile) {
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "house_with_roof.obj";
+    std::string objFile = "cube.obj";
 
     testHalfEdgeStructure(objFile);
 
