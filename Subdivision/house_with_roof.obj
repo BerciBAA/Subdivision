@@ -1,0 +1,36 @@
+# Teljes ház OBJ fájl csak háromszögekkel
+
+# Vertexek (8 sarokpont az alaphoz és 1 a tető csúcsához)
+v 0.0 0.0 0.0  # 1. Alsó bal elöl
+v 1.0 0.0 0.0  # 2. Alsó jobb elöl
+v 1.0 1.0 0.0  # 3. Alsó jobb hátul
+v 0.0 1.0 0.0  # 4. Alsó bal hátul
+
+v 0.0 0.0 1.0  # 5. Felső bal elöl
+v 1.0 0.0 1.0  # 6. Felső jobb elöl
+v 1.0 1.0 1.0  # 7. Felső jobb hátul
+v 0.0 1.0 1.0  # 8. Felső bal hátul
+
+v 0.5 0.5 1.5  # 9. Tető csúcspont
+
+# Elülső fal (két háromszög)
+f 1 2 6  # Alsó háromszög
+f 1 6 5  # Felső háromszög
+
+# Jobb oldali fal (két háromszög)
+f 2 3 7  # Alsó háromszög
+f 2 7 6  # Felső háromszög
+
+# Hátsó fal (két háromszög)
+f 3 4 8  # Alsó háromszög
+f 3 8 7  # Felső háromszög
+
+# Bal oldali fal (két háromszög)
+f 4 1 5  # Alsó háromszög
+f 4 5 8  # Felső háromszög
+
+# Tető (négy háromszög)
+f 5 6 9  # Elülső tető háromszög
+f 6 7 9  # Jobb tető háromszög
+f 7 8 9  # Hátsó tető háromszög
+f 8 5 9  # Bal tető háromszög

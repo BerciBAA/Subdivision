@@ -11,10 +11,16 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <fstream>
+#include <string>
+#include <cstdlib> 
+#include <ctime>  
 
 class HalfEdge;
 class Face;
 class Vertex;
+
+
 
 // Based on this source: https://jerryyin.info/geometry-processing-algorithms/half-edge/
 class Vertex {
@@ -240,25 +246,7 @@ public:
         return ss.str();
     }
 };
-
-// Drawing routine.
-void drawScene(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glColor3f(0.0, 0.0, 0.0);
-
-	// Draw a polygon with specified vertices.
-	glBegin(GL_POLYGON);
-	glVertex3f(20.0, 20.0, 0.0);
-	glVertex3f(80.0, 20.0, 0.0);
-	glVertex3f(80.0, 80.0, 0.0);
-	glVertex3f(20.0, 80.0, 0.0);
-	glEnd();
-
-	glFlush();
-}
-
+  
 // Initialization routine.
 void setup(void)
 {
@@ -268,14 +256,16 @@ void setup(void)
 // OpenGL window reshape routine.
 void resize(int w, int h)
 {
-	glViewport(0, 0, w, h);
+    glViewport(0, 0, w, h);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0.0, 100.0, 0.0, 100.0, -1.0, 1.0);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+    //MEGTALÁN EZT IS KELL MÓKOLNI DÁVID
+    glOrtho(-10.0, 10.0, -10.0, 10.0, -10.0, 10.0);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
 // Keyboard input processing routine.
@@ -291,8 +281,94 @@ void keyInput(unsigned char key, int x, int y)
 	}
 }
 
-void testHalfEdgeStructure() {
-    // Vertex positions from the OBJ file
+void loadOBJ(const std::string& filename, std::vector<std::vector<float>>& verticesPos, std::vector<std::vector<int>>& facesIndices) {
+    std::ifstream objFile(filename);
+    if (!objFile.is_open()) {
+        std::cerr << "Could not open the file: " << filename << std::endl;
+        return;
+    }
+
+    std::string line;
+    while (std::getline(objFile, line)) {
+        std::istringstream ss(line);
+        std::string token;
+        ss >> token;
+
+        // Process vertex position
+        if (token == "v") {
+            std::vector<float> vertex(3);
+            ss >> vertex[0] >> vertex[1] >> vertex[2];
+            verticesPos.push_back(vertex);
+        }
+
+        // Process face indices
+        else if (token == "f") {
+            std::vector<int> face;
+            int index;
+            while (ss >> index) {
+                face.push_back(index);
+            }
+            facesIndices.push_back(face);
+        }
+    }
+
+    objFile.close();
+}
+
+Mesh* meshPtr = nullptr;
+
+
+void renderMesh(const Mesh& mesh) {
+
+    srand(static_cast<unsigned>(time(0)));
+
+    for(int i = 0; i < mesh.faces.size(); i++)
+     {
+        if (i % 2 == 0) {
+            float red = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+            float green = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+            float blue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+            glColor3f(red, green, blue);
+        }
+
+
+        HalfEdge* startEdge = mesh.faces[i]->edge;
+        HalfEdge* currentEdge = startEdge;
+
+        glBegin(GL_LINE_LOOP);
+        
+        do {
+            Vertex* v = currentEdge->origin;
+            glVertex3f(v->x, v->y, v->z);  // A vertex koordináták megadása
+            currentEdge = currentEdge->next;
+        } while (currentEdge != startEdge);  // Visszatérünk a kezdõ élhez
+
+        glEnd();
+    }
+}
+
+
+void drawScene(void) {
+ glClear(GL_COLOR_BUFFER_BIT);
+
+    glLoadIdentity();
+    //EZT KELL ITT MÓKOLNI DÁVID EZT
+    gluLookAt(2.0, 2.0, 1.0,  // Kamera pozíciója kicsit felülrõl
+              0.0, 0.0, 0.0,  // Középpont
+              0.0, 1.0, 0.0); // Felfelé irány (Y tengely)
+
+    if (meshPtr != nullptr) {
+        renderMesh(*meshPtr);
+    }
+
+    glFlush();
+
+}
+
+
+void testHalfEdgeStructure(const std::string& objFile) {
+
+    /*// Vertex positions from the OBJ file
     std::vector<std::vector<float>> vertexPositions = {
         {1.0, 4.0, 0.0}, {3.0, 4.0, 0.0}, {0.0, 2.0, 0.0},
         {2.0, 2.0, 0.0}, {4.0, 2.0, 0.0}, {1.0, 0.0, 0.0},
@@ -303,20 +379,31 @@ void testHalfEdgeStructure() {
     std::vector<std::vector<int>> faceIndices = {
         {1, 3, 4}, {1, 4, 2}, {2, 4, 5},
         {3, 6, 4}, {4, 6, 7}, {4, 7, 5}
-    };
+    };*/
+
+    std::vector<std::vector<float>> vertexPositions;
+    std::vector<std::vector<int>> faceIndices;
+
+
+    loadOBJ(objFile, vertexPositions, faceIndices);
 
     // Create mesh
-    Mesh mesh(faceIndices, vertexPositions);
+    meshPtr = new Mesh(faceIndices, vertexPositions);
 
     std::cout << "Mesh created successfully:" << std::endl;
 
-    std::cout << mesh.toString();
+    std::cout << meshPtr->toString();
 }
+
+
 
 // Main routine.
 int main(int argc, char** argv)
 {
-    testHalfEdgeStructure();
+
+    std::string objFile = "house_with_roof.obj";
+
+    testHalfEdgeStructure(objFile);
 
 	glutInit(&argc, argv);
 
