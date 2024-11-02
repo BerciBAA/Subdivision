@@ -16,6 +16,7 @@
 #include <cstdlib> 
 #include <ctime> 
 #include <cmath>
+#include <functional>
 
 // Camera movement variables
 float cameraX = 2.0f, cameraY = 2.0f, cameraZ = 1.0f;  // Camera position
@@ -23,6 +24,8 @@ float cameraSpeed = 0.1f;  // Camera movement speed
 
 float lookAtX = 0.0f, lookAtY = 0.0f, lookAtZ = 0.0f;  // Look-at target
 float cameraAngle = 0.0f;  // Angle for rotating the camera around the Y-axis
+
+float mouseX = 0.0f, mouseY = 0.0f;
 
 class HalfEdge;
 class Face;
@@ -254,6 +257,58 @@ public:
         return ss.str();
     }
 };
+// END OF DATA STRUCTURE
+
+// CUSTOM UI COMPONENTS
+struct Button {
+    std::string text;
+    float xStart, xEnd, yStart, yEnd;
+    bool isHovered;
+    std::function<void()> onClick;
+
+    Button(const std::string& text, float xStart, float xEnd, float yStart, float yEnd,
+        std::function<void()> onClick)
+        : text(text), xStart(xStart), xEnd(xEnd), yStart(yStart), yEnd(yEnd), isHovered(false), onClick(onClick) {}
+
+    Button() {}
+};
+std::vector<Button> navButtons;
+
+
+enum MenuState { MAIN_MENU, SUBDIVISION_MENU };
+MenuState menuState = MAIN_MENU;
+void setMenuState(MenuState newState);
+
+std::vector<Button> mainMenuButtons = {
+    {"Wire/Fill", -0.95f, -0.5f, 0.92f, 1.0f, []() { std::cout << "Fill clicked!" << std::endl; } },
+    {"Subdivison", -0.45f, -0.0f, 0.92f, 1.0f, []() {setMenuState(SUBDIVISION_MENU); } } // Changes to SETTINGS_MENU
+};
+
+std::vector<Button> subdivisonMenuButtons = {
+    {"Back", -0.95f, -0.65f, 0.92f, 1.0f, []() {setMenuState(MAIN_MENU); } },
+    {"2", -0.63f, -0.33f, 0.92f, 1.0f, []() { std::cout << "2 clicked!" << std::endl; }},
+    {"3", -0.31f, -0.01f, 0.92f, 1.0f, []() { std::cout << "3 clicked!" << std::endl; }}
+};
+
+
+void updateNavBar() {
+    switch (menuState) {
+    case MAIN_MENU:
+        navButtons = mainMenuButtons;
+        break;
+    case SUBDIVISION_MENU:
+        navButtons = subdivisonMenuButtons;
+        break;
+    }
+}
+
+void setMenuState(MenuState newState) {
+    menuState = newState;
+
+    updateNavBar();
+}
+// END OF CUSTOM UI COMPONENTS
+
   
 // Initialization routine.
 void setup(void)
@@ -385,11 +440,106 @@ void renderMesh(const Mesh& mesh) {
     }
 }
 
+void updateHoverState(float x, float y) {
+    for (auto& button : navButtons) {
+        button.isHovered = (x > button.xStart && x < button.xEnd && y > button.yStart && y < button.yEnd);
+    }
+}
+
+void mouseMove(int x, int y) {
+    mouseX = (float)x / (float)glutGet(GLUT_WINDOW_WIDTH) * 2.0f - 1.0f;
+    mouseY = 1.0f - (float)y / (float)glutGet(GLUT_WINDOW_HEIGHT) * 2.0f;
+
+    updateHoverState(mouseX, mouseY);
+    glutPostRedisplay();
+}
+
+void mouseClick(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        for (auto& btn : navButtons) {
+            if (btn.isHovered) {
+                btn.onClick();
+            }
+        }
+    }
+}
+
+void initButtons() {
+    float startX = -0.95f; // Starting X position for the first button
+    float buttonWidth = 0.3f; // Width of each button
+    float buttonHeight = 0.08f; // Height of each button
+    float yPos = 0.92f; // Y position for all buttons
+
+    // Define button labels
+    std::vector<std::string> labels = { "Home", "About", "Services", "Contact", "Help" };
+
+    // Create buttons with the given labels and add them to the navButtons vector
+    for (const auto& label : labels) {
+        Button btn;
+        btn.text = label;
+        btn.xStart = startX;
+        btn.xEnd = startX + buttonWidth;
+        btn.yStart = yPos;
+        btn.yEnd = yPos + buttonHeight;
+        btn.isHovered = false;
+        navButtons.push_back(btn);
+
+        startX += buttonWidth + 0.02f; // Update x position for the next button
+    }
+}
+
+void drawNavBar(void) {
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+
+    glColor3f(0.2f, 0.2f, 0.2f); // navbar
+    glBegin(GL_QUADS);
+        glVertex2f(-1.0f, 0.9f);
+        glVertex2f(1.0f, 0.9f);
+        glVertex2f(1.0f, 1.0f);
+        glVertex2f(-1.0f, 1.0f);
+    glEnd();
+
+    for (const auto& button : navButtons) {
+        if (button.isHovered) {
+            glColor3f(1.0f, 1.0f, 0.0f);
+        }
+        else {
+            glColor3f(0.3f, 0.3f, 0.3f);
+        }
+
+        // Draw button rectangle
+        glBegin(GL_QUADS);
+            glVertex2f(button.xStart, button.yStart);
+            glVertex2f(button.xEnd, button.yStart);
+            glVertex2f(button.xEnd, button.yEnd);
+            glVertex2f(button.xStart, button.yEnd);
+        glEnd();
+
+        // Render button text
+        glColor3f(1.0f, 1.0f, 1.0f);
+        float textX = button.xStart + 0.05f;
+        float textY = button.yStart + 0.02f;
+        glRasterPos2f(textX, textY);
+        for (const char& c : button.text) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+        }
+    }
+
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+}
+
 
 void drawScene(void) {
  glClear(GL_COLOR_BUFFER_BIT);
 
     glLoadIdentity();
+
+    drawNavBar();
 
     //gluLookAt(2.0, 2.0, 1.0,  // Kamera pozíciója kicsit felülrõl
     //          0.0, 0.0, 0.0,  // Középpont
@@ -408,7 +558,7 @@ void drawScene(void) {
 }
 
 
-void testHalfEdgeStructure(const std::string& objFile) {
+void populateHalfEdgeStructure(const std::string& objFile) {
 
     /*// Vertex positions from the OBJ file
     std::vector<std::vector<float>> vertexPositions = {
@@ -445,7 +595,9 @@ int main(int argc, char** argv)
 
     std::string objFile = "cube.obj";
 
-    testHalfEdgeStructure(objFile);
+    populateHalfEdgeStructure(objFile);
+
+    setMenuState(MAIN_MENU);
 
 	glutInit(&argc, argv);
 
@@ -462,6 +614,9 @@ int main(int argc, char** argv)
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(resize);
 	glutKeyboardFunc(keyInput);
+
+    glutPassiveMotionFunc(mouseMove); // mouse movement
+    glutMouseFunc(mouseClick);        // mouse clicks
 
 	glewExperimental = GL_TRUE;
 	glewInit();
