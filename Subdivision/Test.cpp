@@ -19,13 +19,14 @@
 #include <functional>
 
 // Camera movement variables
-float cameraX = 2.0f, cameraY = 2.0f, cameraZ = 1.0f;  // Camera position
+float cameraX = 1.0f, cameraY = 1.0f, cameraZ = 1.0f;  // Camera position
 float cameraSpeed = 0.1f;  // Camera movement speed
 
 float lookAtX = 0.0f, lookAtY = 0.0f, lookAtZ = 0.0f;  // Look-at target
 float cameraAngle = 0.0f;  // Angle for rotating the camera around the Y-axis
 
 float mouseX = 0.0f, mouseY = 0.0f;
+bool isFilled = true;
 
 class HalfEdge;
 class Face;
@@ -106,6 +107,7 @@ public:
     std::vector<Vertex*> vertices;
     std::vector<HalfEdge*> halfEdges;
     std::vector<Face*> faces;
+    float scale = 1.0f;
 
 
     Mesh(const std::vector<std::vector<int>>& facesIndices, const std::vector<std::vector<float>>& verticesPos) {
@@ -122,6 +124,7 @@ public:
 
             vertexNameIdx++;
         }
+        scaleToFit(10.0f);
 
         // Create half-edges and faces
         for (const auto& face : facesIndices) {
@@ -174,6 +177,45 @@ public:
         }
 
         createTwinEdges(&halfEdgeNameIdx);
+    }
+
+    void scaleToFit(float targetSize) {
+        float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
+        float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
+
+        for (const auto& vertex : vertices) {
+            minX = std::min(minX, vertex->x);
+            minY = std::min(minY, vertex->y);
+            minZ = std::min(minZ, vertex->z);
+            maxX = std::max(maxX, vertex->x);
+            maxY = std::max(maxY, vertex->y);
+            maxZ = std::max(maxZ, vertex->z);
+        }
+        std::cout << "Before Scaling: Min(" << minX << ", " << minY << ", " << minZ
+            << "), Max(" << maxX << ", " << maxY << ", " << maxZ << ")\n";
+
+        float midX = (minX + maxX) / 2.0f;
+        float midY = (minY + maxY) / 2.0f;
+        float midZ = (minZ + maxZ) / 2.0f;
+        float maxDimension = std::max({ maxX - minX, maxY - minY, maxZ - minZ });
+
+        scale = targetSize / maxDimension;
+
+        for (auto& vertex : vertices) {
+            vertex->x = (vertex->x - midX) * scale;
+            vertex->y = (vertex->y - midY) * scale;
+            vertex->z = (vertex->z - midZ) * scale;
+        }
+
+        for (const auto& vertex : vertices) {
+            if (vertex->x < -10.0f || vertex->x > 10.0f ||
+                vertex->y < -10.0f || vertex->y > 10.0f ||
+                vertex->z < -10.0f || vertex->z > 10.0f) {
+                std::cout << "Warning: Vertex out of bounds after scaling: ("
+                    << vertex->x << ", " << vertex->y << ", " << vertex->z << ")"
+                    << std::endl;
+            }
+        }
     }
 
     void createTwinEdges(int* halfEdgeNameIdx) {
@@ -280,7 +322,11 @@ MenuState menuState = MAIN_MENU;
 void setMenuState(MenuState newState);
 
 std::vector<Button> mainMenuButtons = {
-    {"Wire/Fill", -0.95f, -0.5f, 0.92f, 1.0f, []() { std::cout << "Fill clicked!" << std::endl; } },
+    {"Wire/Fill", -0.95f, -0.5f, 0.92f, 1.0f, []() { 
+        isFilled = !isFilled;
+        std::cout << "Fill clicked!" << std::endl;
+
+    } },
     {"Subdivison", -0.45f, -0.0f, 0.92f, 1.0f, []() {setMenuState(SUBDIVISION_MENU); } } // Changes to SETTINGS_MENU
 };
 
@@ -314,6 +360,8 @@ void setMenuState(MenuState newState) {
 void setup(void)
 {
 	glClearColor(1.0, 1.0, 1.0, 0.0);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 }
 
 // OpenGL window reshape routine.
@@ -324,7 +372,8 @@ void resize(int w, int h)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    glOrtho(-10.0, 10.0, -10.0, 10.0, -10.0, 10.0);
+    float viewSize = 10.0f;
+    glOrtho(-viewSize, viewSize, -viewSize, viewSize, -viewSize, viewSize);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -366,6 +415,9 @@ void keyInput(unsigned char key, int x, int y)
     case 'e':  // Rotate right
         cameraAngle += 0.1f;
         break;
+    case 32:
+        isFilled = !isFilled;
+        break;
 
     default:
         break;
@@ -404,6 +456,7 @@ void loadOBJ(const std::string& filename, std::vector<std::vector<float>>& verti
             facesIndices.push_back(face);
         }
     }
+    std::cout << "Loaded OBJ with " << verticesPos.size() << " vertices and " << facesIndices.size() << " faces.\n";
 
     objFile.close();
 }
@@ -413,26 +466,40 @@ Mesh* meshPtr = nullptr;
 
 void renderMesh(const Mesh& mesh) {
 
-    srand(static_cast<unsigned>(time(0)));
+    //srand(static_cast<unsigned>(time(0)));
 
-    for(int i = 0; i < mesh.faces.size(); i++)
+    for(int i = 0; i < mesh.faces.size(); i++) //mesh.faces.size()
      {
-        if (i % 2 == 0) {
+        /*if (i % 2 == 0) {
             float red = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
             float green = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
             float blue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
             glColor3f(red, green, blue);
-        }
+        }*/
 
 
         HalfEdge* startEdge = mesh.faces[i]->edge;
         HalfEdge* currentEdge = startEdge;
+        if (isFilled)
+        {
+            glBegin(GL_TRIANGLES);
+        }
+        else {
+            glBegin(GL_LINE_LOOP);
+        }
 
-        glBegin(GL_LINE_LOOP);
-        
         do {
+
             Vertex* v = currentEdge->origin;
+
+            float red = (v->x + 1.0f) / 2.0f;   // Normalizálva 0 és 1 közé
+            float green = (v->y + 1.0f) / 2.0f;
+            float blue = (v->z + 1.0f) / 2.0f;
+            glColor3f(red, green, blue);
+            //std::cout << "Rendering Vertex: (" << v->x << ", " << v->y << ", " << v->z << ")\n";
             glVertex3f(v->x, v->y, v->z);  // A vertex koordináták megadása
+
+
             currentEdge = currentEdge->next;
         } while (currentEdge != startEdge);  // Visszatérünk a kezdõ élhez
 
@@ -489,7 +556,7 @@ void initButtons() {
 }
 
 void drawNavBar(void) {
-
+    glDisable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -531,11 +598,12 @@ void drawNavBar(void) {
 
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
+    glEnable(GL_DEPTH_TEST);
 }
 
 
 void drawScene(void) {
- glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Szín- és mélységi buffer törlése   | GL_DEPTH_BUFFER_BIT
 
     glLoadIdentity();
 
@@ -584,7 +652,9 @@ void populateHalfEdgeStructure(const std::string& objFile) {
 
     std::cout << "Mesh created successfully:" << std::endl;
 
-    std::cout << meshPtr->toString();
+    
+
+    //std::cout << meshPtr->toString();
 }
 
 
@@ -593,7 +663,7 @@ void populateHalfEdgeStructure(const std::string& objFile) {
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "cube.obj";
+    std::string objFile = "suitcase.obj";
 
     populateHalfEdgeStructure(objFile);
 
