@@ -531,30 +531,6 @@ void mouseClick(int button, int state, int x, int y) {
     }
 }
 
-void initButtons() {
-    float startX = -0.95f; // Starting X position for the first button
-    float buttonWidth = 0.3f; // Width of each button
-    float buttonHeight = 0.08f; // Height of each button
-    float yPos = 0.92f; // Y position for all buttons
-
-    // Define button labels
-    std::vector<std::string> labels = { "Home", "About", "Services", "Contact", "Help" };
-
-    // Create buttons with the given labels and add them to the navButtons vector
-    for (const auto& label : labels) {
-        Button btn;
-        btn.text = label;
-        btn.xStart = startX;
-        btn.xEnd = startX + buttonWidth;
-        btn.yStart = yPos;
-        btn.yEnd = yPos + buttonHeight;
-        btn.isHovered = false;
-        navButtons.push_back(btn);
-
-        startX += buttonWidth + 0.02f; // Update x position for the next button
-    }
-}
-
 void drawNavBar(void) {
     glDisable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
