@@ -681,15 +681,41 @@ void populateHalfEdgeStructure(const std::string& objFile) {
     //std::cout << meshPtr->toString();
 }
 
+void checkForErrors() {
+
+    std::cout << "\n\nChecking for errors:\n" << std::endl;
+
+
+    // Check for square faces
+    int squareFaceCounter = 0;
+    for (auto& face : meshPtr->faces) {
+        int edgeCounter = 1;
+        HalfEdge* start = face->edge;
+        HalfEdge* next = start->next;
+        while (next != start) {
+            edgeCounter++;
+            next = next->next;
+        }
+        if (edgeCounter == 4)
+            squareFaceCounter++;
+        else if (edgeCounter > 4)
+            std::cout << "WARNING: Face with " << edgeCounter << " edges!" << std::endl;
+    }
+    if (squareFaceCounter > 0)
+        std::cout << "WARNING: " << squareFaceCounter << " face with square edges found!" << std::endl;
+
+}
 
 
 // Main routine.
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "raptor.obj";
+    std::string objFile = "globe.obj";
 
     populateHalfEdgeStructure(objFile);
+
+    checkForErrors();
 
     setMenuState(MAIN_MENU);
 
