@@ -23,9 +23,26 @@ float angleX = 0.0f;
 float angleY = 0.0f;
 float angleZ = 0.0f;
 float centerX = 0.0f, centerY = 0.0f, centerZ = 0.0f;
+float cameraX = 0.0f, cameraY = 0.0f, cameraZ = 5.0f;
 
 float mouseX = 0.0f, mouseY = 0.0f;
 bool isFilled = true;
+
+float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
+float maxX = FLT_MIN, maxY = FLT_MIN, maxZ = FLT_MIN;
+
+float paddingFactor = 0.2f;
+
+float width = 1.0f, height = 1.0f;
+float paddingX = width * paddingFactor;
+float paddingY = height * paddingFactor;
+
+float left = 0.0f;
+float right = 0.0f;
+float bottom = 0.0f;
+float top = 0.0f;
+float nearPlane = 0.0f;
+float farPlane = 0.0f;
 
 class HalfEdge;
 class Face;
@@ -123,7 +140,6 @@ public:
 
             vertexNameIdx++;
         }
-        scaleToFit(10.0f);
 
         // Create half-edges and faces
         for (const auto& face : facesIndices) {
@@ -357,10 +373,7 @@ void setMenuState(MenuState newState) {
 Mesh* meshPtr = nullptr;
 
 // Function to calculate the midpoint of the object
-void calculateMidpoint(const Mesh& mesh) {
-    float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
-    float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
-
+void calculateMinMaxMidPoints(const Mesh& mesh) {
     for (const auto* vertex : mesh.vertices) {
         minX = std::min(minX, vertex->x);
         minY = std::min(minY, vertex->y);
@@ -377,6 +390,23 @@ void calculateMidpoint(const Mesh& mesh) {
     centerZ = (minZ + maxZ) / 2.0f;
 }
 
+void calculateOrthoSize(float paddingFactor) {
+    width = maxX - minX;
+    height = maxY - minY;
+
+    paddingX = width * paddingFactor;
+    paddingY = height * paddingFactor;
+
+    left = minX - paddingX;
+    right = maxX + paddingX;
+    bottom = minY - paddingY;
+    top = maxY + paddingY;
+    nearPlane = minZ - (maxZ - minZ);
+    farPlane = maxZ + (maxZ - minZ);
+
+    cameraZ = farPlane;
+}
+
 // Initialization routine.
 void setup(void)
 {
@@ -384,23 +414,21 @@ void setup(void)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     if (meshPtr != nullptr) {
-        calculateMidpoint(*meshPtr);
+        calculateMinMaxMidPoints(*meshPtr);
+        calculateOrthoSize(paddingFactor);
     }
 }
 
 // OpenGL window reshape routine.
 void resize(int w, int h)
 {
-    glViewport(0, 0, w, h);
-
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-
-    float viewSize = 10.0f;
-    glOrtho(-viewSize, viewSize, -viewSize, viewSize, -viewSize, viewSize);
+    glOrtho(left, right, bottom, top, nearPlane, farPlane);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    gluLookAt(centerX, centerY, cameraZ, centerX, centerY, centerZ, 0.0f, 1.0f, 0.0f);
 }
 
 // Keyboard input processing routine.
@@ -415,6 +443,21 @@ void keyInput(unsigned char key, int x, int y)
     case 'Z': angleZ -= 5.0f; break; // Rotate around Z-axis (reverse)
     case 32: isFilled = !isFilled; break;
     case 27: exit(0); break;
+    case '+': {
+        paddingFactor += 0.1;
+        std::cout << "Padding factor: " << paddingFactor << std::endl;
+        calculateOrthoSize(paddingFactor);
+        resize(0.0f, 0.0f);
+        ;
+        break;
+    }
+    case '-': {
+        paddingFactor -= 0.1;
+        std::cout << "Padding factor: " << paddingFactor << std::endl;
+        calculateOrthoSize(paddingFactor);
+        resize(0.0f, 0.0f);
+        break;
+    }
     default: break;
     }
     glutPostRedisplay();  // Request a redraw after movement
