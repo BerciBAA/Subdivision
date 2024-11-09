@@ -44,6 +44,8 @@ float top = 0.0f;
 float nearPlane = 0.0f;
 float farPlane = 0.0f;
 
+float radius = 5.0f;
+
 class HalfEdge;
 class Face;
 class Vertex;
@@ -192,45 +194,6 @@ public:
         }
 
         createTwinEdges(&halfEdgeNameIdx);
-    }
-
-    void scaleToFit(float targetSize) {
-        float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
-        float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
-
-        for (const auto& vertex : vertices) {
-            minX = std::min(minX, vertex->x);
-            minY = std::min(minY, vertex->y);
-            minZ = std::min(minZ, vertex->z);
-            maxX = std::max(maxX, vertex->x);
-            maxY = std::max(maxY, vertex->y);
-            maxZ = std::max(maxZ, vertex->z);
-        }
-        std::cout << "Before Scaling: Min(" << minX << ", " << minY << ", " << minZ
-            << "), Max(" << maxX << ", " << maxY << ", " << maxZ << ")\n";
-
-        float midX = (minX + maxX) / 2.0f;
-        float midY = (minY + maxY) / 2.0f;
-        float midZ = (minZ + maxZ) / 2.0f;
-        float maxDimension = std::max({ maxX - minX, maxY - minY, maxZ - minZ });
-
-        scale = targetSize / maxDimension;
-
-        for (auto& vertex : vertices) {
-            vertex->x = (vertex->x - midX) * scale;
-            vertex->y = (vertex->y - midY) * scale;
-            vertex->z = (vertex->z - midZ) * scale;
-        }
-
-        for (const auto& vertex : vertices) {
-            if (vertex->x < -10.0f || vertex->x > 10.0f ||
-                vertex->y < -10.0f || vertex->y > 10.0f ||
-                vertex->z < -10.0f || vertex->z > 10.0f) {
-                std::cout << "Warning: Vertex out of bounds after scaling: ("
-                    << vertex->x << ", " << vertex->y << ", " << vertex->z << ")"
-                    << std::endl;
-            }
-        }
     }
 
     void createTwinEdges(int* halfEdgeNameIdx) {
@@ -408,6 +371,9 @@ void calculateOrthoSize(float paddingFactor) {
     farPlane = maxZ + (maxZ - minZ);
 
     cameraZ = farPlane;
+
+    radius = std::max((maxX - minX), (maxY - minY));
+    radius = std::max((maxZ - minZ), radius);
 }
 
 // Initialization routine.
@@ -732,7 +698,7 @@ void checkForErrors() {
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "cube.obj";
+    std::string objFile = "globe.obj";
 
     populateHalfEdgeStructure(objFile);
 
