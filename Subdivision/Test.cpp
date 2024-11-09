@@ -18,12 +18,11 @@
 #include <cmath>
 #include <functional>
 
-// Camera movement variables
-float cameraX = 1.0f, cameraY = 1.0f, cameraZ = 1.0f;  // Camera position
-float cameraSpeed = 0.1f;  // Camera movement speed
-
-float lookAtX = 0.0f, lookAtY = 0.0f, lookAtZ = 0.0f;  // Look-at target
-float cameraAngle = 0.0f;  // Angle for rotating the camera around the Y-axis
+// Global variables for rotation angles
+float angleX = 0.0f;
+float angleY = 0.0f;
+float angleZ = 0.0f;
+float centerX = 0.0f, centerY = 0.0f, centerZ = 0.0f;
 
 float mouseX = 0.0f, mouseY = 0.0f;
 bool isFilled = true;
@@ -355,13 +354,38 @@ void setMenuState(MenuState newState) {
 }
 // END OF CUSTOM UI COMPONENTS
 
-  
+Mesh* meshPtr = nullptr;
+
+// Function to calculate the midpoint of the object
+void calculateMidpoint(const Mesh& mesh) {
+    float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
+    float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
+
+    for (const auto* vertex : mesh.vertices) {
+        minX = std::min(minX, vertex->x);
+        minY = std::min(minY, vertex->y);
+        minZ = std::min(minZ, vertex->z);
+
+        maxX = std::max(maxX, vertex->x);
+        maxY = std::max(maxY, vertex->y);
+        maxZ = std::max(maxZ, vertex->z);
+    }
+
+    // Set the midpoint
+    centerX = (minX + maxX) / 2.0f;
+    centerY = (minY + maxY) / 2.0f;
+    centerZ = (minZ + maxZ) / 2.0f;
+}
+
 // Initialization routine.
 void setup(void)
 {
 	glClearColor(1.0, 1.0, 1.0, 0.0);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+    if (meshPtr != nullptr) {
+        calculateMidpoint(*meshPtr);
+    }
 }
 
 // OpenGL window reshape routine.
@@ -382,47 +406,17 @@ void resize(int w, int h)
 // Keyboard input processing routine.
 void keyInput(unsigned char key, int x, int y)
 {
-    switch (key)
-    {
-    case 27:
-        exit(0);
-        break;
-
-    case 'w':  // Move forward
-        cameraX += cameraSpeed * sin(cameraAngle);
-        cameraZ -= cameraSpeed * cos(cameraAngle);
-        break;
-
-    case 's':  // Move backward
-        cameraX -= cameraSpeed * sin(cameraAngle);
-        cameraZ += cameraSpeed * cos(cameraAngle);
-        break;
-
-    case 'a':  // Move left
-        cameraX -= cameraSpeed * cos(cameraAngle);
-        cameraZ -= cameraSpeed * sin(cameraAngle);
-        break;
-
-    case 'd':  // Move right
-        cameraX += cameraSpeed * cos(cameraAngle);
-        cameraZ += cameraSpeed * sin(cameraAngle);
-        break;
-
-    case 'q':  // Rotate left
-        cameraAngle -= 0.1f;
-        break;
-
-    case 'e':  // Rotate right
-        cameraAngle += 0.1f;
-        break;
-    case 32:
-        isFilled = !isFilled;
-        break;
-
-    default:
-        break;
+    switch (key) {
+    case 'x': angleX += 5.0f; break; // Rotate around X-axis
+    case 'y': angleY += 5.0f; break; // Rotate around Y-axis
+    case 'z': angleZ += 5.0f; break; // Rotate around Z-axis
+    case 'X': angleX -= 5.0f; break; // Rotate around X-axis (reverse)
+    case 'Y': angleY -= 5.0f; break; // Rotate around Y-axis (reverse)
+    case 'Z': angleZ -= 5.0f; break; // Rotate around Z-axis (reverse)
+    case 32: isFilled = !isFilled; break;
+    case 27: exit(0); break;
+    default: break;
     }
-
     glutPostRedisplay();  // Request a redraw after movement
 }
 
@@ -460,8 +454,6 @@ void loadOBJ(const std::string& filename, std::vector<std::vector<float>>& verti
 
     objFile.close();
 }
-
-Mesh* meshPtr = nullptr;
 
 
 void renderMesh(const Mesh& mesh) {
@@ -585,13 +577,12 @@ void drawScene(void) {
 
     drawNavBar();
 
-    //gluLookAt(2.0, 2.0, 1.0,  // Kamera pozíciója kicsit felülrõl
-    //          0.0, 0.0, 0.0,  // Középpont
-    //          0.0, 1.0, 0.0); // Felfelé irány (Y tengely)
-
-    gluLookAt(cameraX, cameraY, cameraZ,
-        cameraX + sin(cameraAngle), lookAtY, cameraZ - cos(cameraAngle),
-        0.0, 1.0, 0.0);
+    // Translate to the midpoint, apply rotations, then translate back
+    glTranslatef(centerX, centerY, centerZ);
+    glRotatef(angleX, 1.0f, 0.0f, 0.0f);
+    glRotatef(angleY, 0.0f, 1.0f, 0.0f);
+    glRotatef(angleZ, 0.0f, 0.0f, 1.0f);
+    glTranslatef(-centerX, -centerY, -centerZ);
 
     if (meshPtr != nullptr) {
         renderMesh(*meshPtr);
@@ -639,7 +630,7 @@ void populateHalfEdgeStructure(const std::string& objFile) {
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "suitcase.obj";
+    std::string objFile = "globe.obj";
 
     populateHalfEdgeStructure(objFile);
 
