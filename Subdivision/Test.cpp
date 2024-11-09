@@ -463,6 +463,18 @@ void keyInput(unsigned char key, int x, int y)
     glutPostRedisplay();  // Request a redraw after movement
 }
 
+int extractFirstNumber(const std::string& coordinate) {
+    size_t firstSlash = coordinate.find('/');
+    if (firstSlash != std::string::npos) {
+        // If it's in the "vertex/texture/normal" format, take the first index
+        std::string firstPart = coordinate.substr(0, firstSlash);
+        return std::stoi(firstPart);  // Convert to integer
+    }
+    else {
+        return std::stoi(coordinate);
+    }
+}
+
 void loadOBJ(const std::string& filename, std::vector<std::vector<float>>& verticesPos, std::vector<std::vector<int>>& facesIndices) {
     std::ifstream objFile(filename);
     if (!objFile.is_open()) {
@@ -487,7 +499,9 @@ void loadOBJ(const std::string& filename, std::vector<std::vector<float>>& verti
         else if (token == "f") {
             std::vector<int> face;
             int index;
-            while (ss >> index) {
+            std::string vertexData;
+            while (ss >> vertexData) {
+                int index = extractFirstNumber(vertexData);
                 face.push_back(index);
             }
             facesIndices.push_back(face);
@@ -673,7 +687,7 @@ void populateHalfEdgeStructure(const std::string& objFile) {
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "globe.obj";
+    std::string objFile = "raptor.obj";
 
     populateHalfEdgeStructure(objFile);
 
