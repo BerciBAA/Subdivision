@@ -336,19 +336,22 @@ enum MenuState { MAIN_MENU, SUBDIVISION_MENU };
 MenuState menuState = MAIN_MENU;
 void setMenuState(MenuState newState);
 
+float buttonYMin = 0.92f;
+float buttonYMax = 0.98f;
+
 std::vector<Button> mainMenuButtons = {
-    {"Wire/Fill", -0.95f, -0.5f, 0.92f, 1.0f, []() { 
+    {"Wire/Fill", -0.95f, -0.5f, buttonYMin, buttonYMax, []() {
         isFilled = !isFilled;
         std::cout << "Fill clicked!" << std::endl;
 
     } },
-    {"Subdivison", -0.45f, -0.0f, 0.92f, 1.0f, []() {setMenuState(SUBDIVISION_MENU); } } // Changes to SETTINGS_MENU
+    {"Subdivison", -0.45f, -0.0f, buttonYMin, buttonYMax, []() {setMenuState(SUBDIVISION_MENU); } } // Changes to SETTINGS_MENU
 };
 
 std::vector<Button> subdivisonMenuButtons = {
-    {"Back", -0.95f, -0.65f, 0.92f, 1.0f, []() {setMenuState(MAIN_MENU); } },
-    {"2", -0.63f, -0.33f, 0.92f, 1.0f, []() { std::cout << "2 clicked!" << std::endl; }},
-    {"3", -0.31f, -0.01f, 0.92f, 1.0f, []() { std::cout << "3 clicked!" << std::endl; }}
+    {"Back", -0.95f, -0.65f, buttonYMin, buttonYMax, []() {setMenuState(MAIN_MENU); } },
+    {"2", -0.63f, -0.33f, buttonYMin, buttonYMax, []() { std::cout << "2 clicked!" << std::endl; }},
+    {"3", -0.31f, -0.01f, buttonYMin, buttonYMax, []() { std::cout << "3 clicked!" << std::endl; }}
 };
 
 
@@ -422,6 +425,8 @@ void setup(void)
 // OpenGL window reshape routine.
 void resize(int w, int h)
 {
+    glViewport(0, 0, w, h);
+    
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(left, right, bottom, top, nearPlane, farPlane);
@@ -429,6 +434,11 @@ void resize(int w, int h)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(centerX, centerY, cameraZ, centerX, centerY, centerZ, 0.0f, 1.0f, 0.0f);
+}
+
+void setPadding(float padding) {
+    calculateOrthoSize(padding);
+    resize(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
 }
 
 // Keyboard input processing routine.
@@ -445,17 +455,13 @@ void keyInput(unsigned char key, int x, int y)
     case 27: exit(0); break;
     case '+': {
         paddingFactor += 0.1;
-        std::cout << "Padding factor: " << paddingFactor << std::endl;
-        calculateOrthoSize(paddingFactor);
-        resize(0.0f, 0.0f);
+        setPadding(paddingFactor);
         ;
         break;
     }
     case '-': {
         paddingFactor -= 0.1;
-        std::cout << "Padding factor: " << paddingFactor << std::endl;
-        calculateOrthoSize(paddingFactor);
-        resize(0.0f, 0.0f);
+        setPadding(paddingFactor);
         break;
     }
     default: break;
@@ -612,13 +618,28 @@ void drawNavBar(void) {
         glEnd();
 
         // Render button text
-        glColor3f(1.0f, 1.0f, 1.0f);
+        if (button.isHovered) {
+            glColor3f(0.0f, 0.0f, 0.0f);
+        }
+        else {
+            glColor3f(1.0f, 1.0f, 0.0f);
+        }
         float textX = button.xStart + 0.05f;
-        float textY = button.yStart + 0.02f;
+        float textY = button.yStart + 0.001f;
         glRasterPos2f(textX, textY);
         for (const char& c : button.text) {
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
         }
+    }
+
+    glColor3f(1.0f, 1.0f, 0.0f);
+    glRasterPos2f(0.5f, buttonYMin + 0.001f);
+
+    std::ostringstream oss;
+    oss << "Padding: " << paddingFactor * 100 << "%";
+
+    for (const char& c : oss.str()) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
     }
 
     glPopMatrix();
@@ -711,7 +732,7 @@ void checkForErrors() {
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "globe.obj";
+    std::string objFile = "cube.obj";
 
     populateHalfEdgeStructure(objFile);
 
