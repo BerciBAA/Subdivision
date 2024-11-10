@@ -33,18 +33,8 @@ float maxX = FLT_MIN, maxY = FLT_MIN, maxZ = FLT_MIN;
 
 float paddingFactor = 0.2f;
 
-float width = 1.0f, height = 1.0f;
-float paddingX = width * paddingFactor;
-float paddingY = height * paddingFactor;
-
-float left = 0.0f;
-float right = 0.0f;
-float bottom = 0.0f;
-float top = 0.0f;
-float nearPlane = 0.0f;
-float farPlane = 0.0f;
-
-float radius = 5.0f;
+float radius = 0.0f;
+float viewRadius = 0.0f;
 
 class HalfEdge;
 class Face;
@@ -348,6 +338,12 @@ void calculateMinMaxMidPoints(const Mesh& mesh) {
         maxX = std::max(maxX, vertex->x);
         maxY = std::max(maxY, vertex->y);
         maxZ = std::max(maxZ, vertex->z);
+
+        float dx = vertex->x - centerX;
+        float dy = vertex->y - centerY;
+        float dz = vertex->z - centerZ;
+        float distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+        radius = std::max(radius, distance);
     }
 
     // Set the midpoint
@@ -357,23 +353,7 @@ void calculateMinMaxMidPoints(const Mesh& mesh) {
 }
 
 void calculateOrthoSize(float paddingFactor) {
-    width = maxX - minX;
-    height = maxY - minY;
-
-    paddingX = width * paddingFactor;
-    paddingY = height * paddingFactor;
-
-    left = minX - paddingX;
-    right = maxX + paddingX;
-    bottom = minY - paddingY;
-    top = maxY + paddingY;
-    nearPlane = minZ - (maxZ - minZ);
-    farPlane = maxZ + (maxZ - minZ);
-
-    cameraZ = farPlane;
-
-    radius = std::max((maxX - minX), (maxY - minY));
-    radius = std::max((maxZ - minZ), radius);
+    viewRadius = radius + (radius * paddingFactor);
 }
 
 // Initialization routine.
@@ -392,14 +372,18 @@ void setup(void)
 void resize(int w, int h)
 {
     glViewport(0, 0, w, h);
+
+    float closePlane = centerZ - viewRadius * 2;
     
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(left, right, bottom, top, nearPlane, farPlane);
+    glOrtho(centerX - viewRadius, centerX + viewRadius, 
+        centerY - viewRadius, centerY + viewRadius, 
+        closePlane, centerZ + viewRadius*2);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(centerX, centerY, cameraZ, centerX, centerY, centerZ, 0.0f, 1.0f, 0.0f);
+    gluLookAt(centerX, centerY, closePlane, centerX, centerY, centerZ, 0.0f, 1.0f, 0.0f);
 }
 
 void setPadding(float padding) {
@@ -672,7 +656,7 @@ void checkForErrors() {
 
     std::cout << "\n\nChecking for errors:\n" << std::endl;
 
-
+     
     // Check for square faces
     int squareFaceCounter = 0;
     for (auto& face : meshPtr->faces) {
@@ -698,7 +682,7 @@ void checkForErrors() {
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "globe.obj";
+    std::string objFile = "cat.obj";
 
     populateHalfEdgeStructure(objFile);
 
