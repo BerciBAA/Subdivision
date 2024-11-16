@@ -19,8 +19,10 @@
 #include <functional>
 
 #include "HalfEdge.h"
+#include "ButterflySubdivision.h"
 
 // Global variables for rotation angles
+
 float angleX = 0.0f;
 float angleY = 0.0f;
 float angleZ = 0.0f;
@@ -38,9 +40,7 @@ float paddingFactor = 0.2f;
 float radius = 0.0f;
 float viewRadius = 0.0f;
 
-class HalfEdge;
-class Face;
-class Vertex;
+Mesh* meshPtr = nullptr;
 
 
 // CUSTOM UI COMPONENTS
@@ -77,7 +77,10 @@ std::vector<Button> mainMenuButtons = {
 
 std::vector<Button> subdivisonMenuButtons = {
     {"Back", -0.95f, -0.65f, buttonYMin, buttonYMax, []() {setMenuState(MAIN_MENU); } },
-    {"2", -0.63f, -0.33f, buttonYMin, buttonYMax, []() { std::cout << "2 clicked!" << std::endl; }},
+    {"Butterfly", -0.63f, -0.33f, buttonYMin, buttonYMax, []() {
+        ButterflySubdivision subdivison = ButterflySubdivision();
+        subdivison.subdivide(meshPtr);
+    }},
     {"3", -0.31f, -0.01f, buttonYMin, buttonYMax, []() { std::cout << "3 clicked!" << std::endl; }}
 };
 
@@ -99,8 +102,6 @@ void setMenuState(MenuState newState) {
     updateNavBar();
 }
 // END OF CUSTOM UI COMPONENTS
-
-Mesh* meshPtr = nullptr;
 
 // Function to calculate the midpoint of the object
 void calculateMinMaxMidPoints(const Mesh& mesh) {
@@ -456,7 +457,7 @@ void checkForErrors() {
 int main(int argc, char** argv)
 {
 
-    std::string objFile = "cat.obj";
+    std::string objFile = "globe.obj";
 
     populateHalfEdgeStructure(objFile);
 

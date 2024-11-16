@@ -29,9 +29,12 @@ public:
     Face* incidentFace;
     std::string name;
 
-    HalfEdge(const std::string& name = "");
+    HalfEdge(const std::string& name);
+    HalfEdge();
+
     std::string toString() const;
-    bool isBoundaryEdge(HalfEdge* he);
+    bool isBoundaryEdge();
+    std::string getNextName();
 };
 
 class Face {
@@ -39,7 +42,8 @@ public:
     HalfEdge* edge;
     std::string name;
 
-    Face(const std::string& name = "");
+    Face(std::string& name);
+    Face();
     std::string toString() const;
 };
 
@@ -53,9 +57,7 @@ public:
     ~Mesh();
 
     std::string toString() const;
-
-private:
-    void createTwinEdges(int* halfEdgeNameIdx);
+    void createTwinEdges();
 };
 
 #endif // HALF_EDGE_H

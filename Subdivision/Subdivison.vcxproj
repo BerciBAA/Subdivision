@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ButterflySubdivision.h" />
+    <ClInclude Include="globals.h" />
     <ClInclude Include="HalfEdge.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
