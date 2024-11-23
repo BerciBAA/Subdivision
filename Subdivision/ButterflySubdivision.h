@@ -1,11 +1,11 @@
 #pragma once
-#include <unordered_map>
 #include <iostream>
 
 #include "HalfEdge.h"
+#include "TriangleSubdivison.h"
 #include "globals.h"
 
-class ButterflySubdivision {
+class ButterflySubdivision : TriangleSubdivison {
 public:
     void subdivide(Mesh* mesh);
     ButterflySubdivision() = default;
@@ -13,6 +13,5 @@ public:
 private:
     Vertex* createBoundaryVertex(HalfEdge* he, Mesh* mesh);
     Vertex* createInteriorVertex(HalfEdge* he, Mesh* mesh);
-    void rebuildFace(Face* face, Mesh* mesh, std::vector<HalfEdge*>& newHalfEdges, std::vector<Face*>& newFaces, std::unordered_map<HalfEdge*, Vertex*>& edgeVertexMap);
 };
 

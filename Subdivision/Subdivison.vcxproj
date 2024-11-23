@@ -21,12 +21,16 @@
   <ItemGroup>
     <ClCompile Include="ButterflySubdivision.cpp" />
     <ClCompile Include="HalfEdge.cpp" />
+    <ClCompile Include="LoopSubdivision.cpp" />
     <ClCompile Include="Test.cpp" />
+    <ClCompile Include="TriangleSubdivison.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ButterflySubdivision.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="HalfEdge.h" />
+    <ClInclude Include="LoopSubdivision.h" />
+    <ClInclude Include="TriangleSubdivison.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
