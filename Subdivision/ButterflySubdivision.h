@@ -1,17 +1,14 @@
 #pragma once
-#include <iostream>
 
-#include "HalfEdge.h"
 #include "TriangleSubdivison.h"
-#include "globals.h"
 
-class ButterflySubdivision : TriangleSubdivison {
+class ButterflySubdivision : public TriangleSubdivison {
 public:
-    void subdivide(Mesh* mesh);
     ButterflySubdivision() = default;
 
 private:
     Vertex* createBoundaryVertex(HalfEdge* he, Mesh* mesh);
     Vertex* createInteriorVertex(HalfEdge* he, Mesh* mesh);
+    Vertex* moveVertex(Vertex* v, Mesh* mesh);
 };
 

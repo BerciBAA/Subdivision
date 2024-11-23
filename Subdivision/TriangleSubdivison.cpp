@@ -1,5 +1,44 @@
 #include "TriangleSubdivison.h"
 
+void TriangleSubdivison::subdivide(Mesh* mesh)
+{
+    std::unordered_map<HalfEdge*, Vertex*> edgeVertexMap;
+
+    for (HalfEdge* he : mesh->halfEdges) {
+        if (!edgeVertexMap[he] && !edgeVertexMap[he->twin]) {
+            edgeVertexMap[he] = he->isBoundaryEdge()
+                ? createBoundaryVertex(he, mesh)
+                : createInteriorVertex(he, mesh);
+            edgeVertexMap[he->twin] = edgeVertexMap[he]; // Share new vertex
+        }
+    }
+
+    // move old vertices
+    std::vector<Vertex*> newVertices;
+    for (const auto& vertex : mesh->vertices) {
+        Vertex* movedVertex = moveVertex(vertex, mesh);
+        newVertices.push_back(movedVertex);
+    }
+    if (!newVertices.empty() && newVertices[0] != nullptr)
+        mesh->vertices = newVertices;
+
+    for (const auto& pair : edgeVertexMap) {
+        mesh->vertices.push_back(pair.second);
+    }
+
+    std::vector<HalfEdge*> newHalfEdges;
+    std::vector<Face*> newFaces;
+
+    for (Face* f : mesh->faces) {
+        rebuildFace(f, mesh, newHalfEdges, newFaces, edgeVertexMap);
+    }
+
+    mesh->halfEdges = newHalfEdges;
+    mesh->faces = newFaces;
+
+    mesh->createTwinEdges();
+}
+
 void TriangleSubdivison::rebuildFace(Face* face, Mesh* mesh, std::vector<HalfEdge*>& newHalfEdges, std::vector<Face*>& newFaces, std::unordered_map<HalfEdge*, Vertex*>& edgeVertexMap)
 {
     HalfEdge* he1 = face->edge;

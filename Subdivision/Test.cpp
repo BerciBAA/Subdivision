@@ -20,6 +20,7 @@
 
 #include "HalfEdge.h"
 #include "ButterflySubdivision.h"
+#include "LoopSubdivision.h"
 
 // Global variables for rotation angles
 
@@ -77,11 +78,14 @@ std::vector<Button> mainMenuButtons = {
 
 std::vector<Button> subdivisonMenuButtons = {
     {"Back", -0.95f, -0.65f, buttonYMin, buttonYMax, []() {setMenuState(MAIN_MENU); } },
-    {"Butterfly", -0.63f, -0.33f, buttonYMin, buttonYMax, []() {
-        ButterflySubdivision subdivison = ButterflySubdivision();
+    {"Loop", -0.63f, -0.3f, buttonYMin, buttonYMax, []() {
+        LoopSubdivision subdivison = LoopSubdivision();
         subdivison.subdivide(meshPtr);
     }},
-    {"3", -0.31f, -0.01f, buttonYMin, buttonYMax, []() { std::cout << "3 clicked!" << std::endl; }}
+    {"Butterfly", -0.25f, 0.25f, buttonYMin, buttonYMax, []() { 
+        ButterflySubdivision subdivison = ButterflySubdivision();
+        subdivison.subdivide(meshPtr);
+    }}
 };
 
 

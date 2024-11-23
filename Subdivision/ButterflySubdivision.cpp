@@ -1,34 +1,5 @@
 #include "ButterflySubdivision.h"
 
-void ButterflySubdivision::subdivide(Mesh* mesh)
-{
-    std::unordered_map<HalfEdge*, Vertex*> edgeVertexMap;
-
-    for (HalfEdge* he : mesh->halfEdges) {
-        if (!edgeVertexMap[he] && !edgeVertexMap[he->twin]) {
-            edgeVertexMap[he] = he->isBoundaryEdge()
-                ? createBoundaryVertex(he, mesh)
-                : createInteriorVertex(he, mesh);
-            edgeVertexMap[he->twin] = edgeVertexMap[he]; // Share new vertex
-        }
-    }
-
-    for (const auto& pair : edgeVertexMap) {
-        mesh->vertices.push_back(pair.second);
-    }
-
-    std::vector<HalfEdge*> newHalfEdges;
-    std::vector<Face*> newFaces;
-
-    for (Face* f : mesh->faces) {
-        rebuildFace(f, mesh, newHalfEdges, newFaces, edgeVertexMap);
-    }
-
-    mesh->halfEdges = newHalfEdges;
-    mesh->faces = newFaces;
-
-    mesh->createTwinEdges();
-}
 
 Vertex* ButterflySubdivision::createBoundaryVertex(HalfEdge* he, Mesh* mesh)
 {
@@ -75,4 +46,9 @@ Vertex* ButterflySubdivision::createInteriorVertex(HalfEdge* he, Mesh* mesh)
     Vertex* newVertex = new Vertex(x, y, z, vertexNameStream.str());
     mesh->vertices.push_back(newVertex);
     return newVertex;
+}
+
+Vertex* ButterflySubdivision::moveVertex(Vertex* v, Mesh* mesh)
+{
+    return nullptr;
 }
