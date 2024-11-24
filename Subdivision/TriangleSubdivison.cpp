@@ -1,6 +1,6 @@
 #include "TriangleSubdivison.h"
 
-void TriangleSubdivison::subdivide(Mesh* mesh)
+void TriangleSubdivison::subdivide(Mesh* mesh, bool moveVertices)
 {
     std::unordered_map<HalfEdge*, Vertex*> edgeVertexMap;
 
@@ -14,21 +14,27 @@ void TriangleSubdivison::subdivide(Mesh* mesh)
     }
 
     // move old vertices
-    std::vector<Vertex*> newVertices;
-    for (const auto& vertex : mesh->vertices) {
-        Vertex* movedVertex = moveVertex(vertex, mesh);
-        newVertices.push_back(movedVertex);
-    }
-    if (!newVertices.empty() && newVertices[0] != nullptr)
+    if (moveVertices){
+        std::vector<Vertex*> newVertices;
+        for (const auto& vertex : mesh->vertices) {
+            Vertex* movedVertex = moveVertex(vertex, mesh);
+            newVertices.push_back(movedVertex);
+        }
         mesh->vertices = newVertices;
+        std::cout << "Moved vertices!" << std::endl;
+    }
 
+
+    // add new vertices
     for (const auto& pair : edgeVertexMap) {
-        mesh->vertices.push_back(pair.second);
+        if (std::find(mesh->vertices.begin(), mesh->vertices.end(), pair.second) == mesh->vertices.end())
+            mesh->vertices.push_back(pair.second);
     }
 
     std::vector<HalfEdge*> newHalfEdges;
     std::vector<Face*> newFaces;
 
+    // build small triangles
     for (Face* f : mesh->faces) {
         rebuildFace(f, mesh, newHalfEdges, newFaces, edgeVertexMap);
     }

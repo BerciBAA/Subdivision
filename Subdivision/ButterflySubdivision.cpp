@@ -15,7 +15,6 @@ Vertex* ButterflySubdivision::createBoundaryVertex(HalfEdge* he, Mesh* mesh)
     vertexNameStream << "v" << vertexNameIdx++;
 
     Vertex* newVertex = new Vertex(x, y, z, vertexNameStream.str());
-    mesh->vertices.push_back(newVertex);
     return newVertex;
 }
 
@@ -44,7 +43,6 @@ Vertex* ButterflySubdivision::createInteriorVertex(HalfEdge* he, Mesh* mesh)
     vertexNameStream << "v" << vertexNameIdx++;
 
     Vertex* newVertex = new Vertex(x, y, z, vertexNameStream.str());
-    mesh->vertices.push_back(newVertex);
     return newVertex;
 }
 

@@ -9,6 +9,15 @@ extern int halfEdgeNameIdx = 0;
 Vertex::Vertex(float x, float y, float z, const std::string& name)
     : x(x), y(y), z(z), incidentEdge(nullptr), name(name) {}
 
+Vertex::Vertex(Vertex* v) : x(0), y(0), z(0), incidentEdge(nullptr), name("error")
+{
+    x = v->x;
+    y = v->y;
+    z = v->z;
+    incidentEdge = v->incidentEdge;
+    name = v->name;
+}
+
 std::string Vertex::toString() const {
     std::stringstream ss;
     ss << "Vertex " << name << " (" << x << ", " << y << ", " << z << ")";

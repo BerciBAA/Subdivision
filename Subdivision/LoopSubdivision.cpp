@@ -14,7 +14,6 @@ Vertex* LoopSubdivision::createBoundaryVertex(HalfEdge* he, Mesh* mesh)
     vertexNameStream << "v" << vertexNameIdx++;
 
     Vertex* newVertex = new Vertex(x, y, z, vertexNameStream.str());
-    mesh->vertices.push_back(newVertex);
     return newVertex;
 }
 
@@ -34,28 +33,68 @@ Vertex* LoopSubdivision::createInteriorVertex(HalfEdge* he, Mesh* mesh)
     vertexNameStream << "v" << vertexNameIdx++;
 
     Vertex* newVertex = new Vertex(x, y, z, vertexNameStream.str());
-    mesh->vertices.push_back(newVertex);
     return newVertex;
 }
 
 Vertex* LoopSubdivision::moveVertex(Vertex* v, Mesh* mesh)
 {
-    //TODO: create new vertex with modified coordinates
+    // create new vertex to be modified
+    Vertex* newVertex = new Vertex(v);
 
     // check how many neighbor vertices
     std::vector<Vertex*> neighborVertices;
     for (const auto& hfe : mesh->halfEdges) {
-        if (hfe->twin->origin == v) {
+        if (hfe->origin == v) {
             neighborVertices.push_back(hfe->twin->origin);
+            hfe->origin = newVertex;
+        }
+    }     
+    int n = neighborVertices.size();
+    float beta = 0;
+
+    // move newly created vertex
+    // n = 2 -> boundary
+    if (n == 2) {
+        newVertex->x = v->x * 0.75f + neighborVertices[0]->x * 0.125f + neighborVertices[1]->x * 0.125f;
+        newVertex->y = v->y * 0.75f + neighborVertices[0]->y * 0.125f + neighborVertices[1]->y * 0.125f;
+        newVertex->z = v->z * 0.75f + neighborVertices[0]->z * 0.125f + neighborVertices[1]->z * 0.125f;
+    }
+    // n = 3 -> format 1
+    else if (n == 3)
+    {
+        beta = 0.1875f;
+        float origVertexPart = 1.0f - n * beta;
+
+        newVertex->x = v->x * origVertexPart;
+        newVertex->y = v->y * origVertexPart;
+        newVertex->z = v->z * origVertexPart;
+
+        for (const auto& neighborVertex : neighborVertices)
+        {
+            newVertex->x += neighborVertex->x * beta;
+            newVertex->y += neighborVertex->y * beta;
+            newVertex->z += neighborVertex->z * beta;
         }
     }
-    std::cout << "Vertex " << v->name << " has " << neighborVertices.size() << " neighbors!" << std::endl;
-     
-     
-    // move newly created vertex
-    // n = 2 -> boundary 
-    // n = 3 -> format 1
     // n > 3 -> format 2
+    else if (n > 3) {
+        beta = 3.0f / (8.0f * n);
+        float origVertexPart = 1.0f - n * beta;
 
-    return v;
+        newVertex->x = v->x * origVertexPart;
+        newVertex->y = v->y * origVertexPart;
+        newVertex->z = v->z * origVertexPart;
+
+        for (const auto& neighborVertex : neighborVertices)
+        {
+            newVertex->x += neighborVertex->x * beta;
+            newVertex->y += neighborVertex->y * beta;
+            newVertex->z += neighborVertex->z * beta;
+        }
+    }
+    else {
+        std::cout << "Error: Vertex " << v->name << " has " << n << " neighbor vertices!" << std::endl;
+    }
+
+    return newVertex;
 }

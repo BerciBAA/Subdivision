@@ -17,6 +17,7 @@ public:
     std::string name;
 
     Vertex(float x, float y, float z, const std::string& name = "");
+    Vertex(Vertex* v);
     std::string toString() const;
 };
 

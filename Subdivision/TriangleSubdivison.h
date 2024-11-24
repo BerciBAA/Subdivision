@@ -4,12 +4,13 @@
 
 #include <unordered_map>
 #include <iostream>
+#include <algorithm>
 
 
 class TriangleSubdivison
 {
 public:
-    void subdivide(Mesh* mesh);
+    void subdivide(Mesh* mesh, bool moveVertices);
     TriangleSubdivison() = default;
 
 private:
