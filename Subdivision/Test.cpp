@@ -94,13 +94,18 @@ std::vector<Button> subdivisonMenuButtons = {
 
 std::vector<Button> shadingMenuButtons = {
     {"Back", -0.95f, -0.65f, buttonYMin, buttonYMax, []() {setMenuState(MAIN_MENU); } },
-    {"None", -0.63f, -0.32f, buttonYMin, buttonYMax, []() {
+    {"None", -0.63f, -0.38f, buttonYMin, buttonYMax, []() {
         activeShading = ShadingTypes::NONE;
         Shadings::disableLighting();
         glutPostRedisplay();
     }},
-    {"Flat", -0.30f, 0.0f, buttonYMin, buttonYMax, []() {
+    {"Flat", -0.36f, -0.11f, buttonYMin, buttonYMax, []() {
         activeShading = ShadingTypes::FLAT;
+        Shadings::setupLighting();
+        glutPostRedisplay();
+    }},
+    {"Guro", -0.09f, 0.16f, buttonYMin, buttonYMax, []() {
+        activeShading = ShadingTypes::GOURAUD;
         Shadings::setupLighting();
         glutPostRedisplay();
     }}
@@ -269,11 +274,11 @@ void loadOBJ(const std::string& filename, std::vector<std::vector<float>>& verti
 }
 
 
-void renderMesh(const Mesh& mesh) {
+void renderMesh() {
 
     //srand(static_cast<unsigned>(time(0)));
 
-    for(int i = 0; i < mesh.faces.size(); i++) //mesh.faces.size()
+    for(int i = 0; i < meshPtr->faces.size(); i++) //mesh.faces.size()
      {
         /*if (i % 2 == 0) {
             float red = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
@@ -283,7 +288,7 @@ void renderMesh(const Mesh& mesh) {
         }*/
 
 
-        HalfEdge* startEdge = mesh.faces[i]->edge;
+        HalfEdge* startEdge = meshPtr->faces[i]->edge;
         HalfEdge* currentEdge = startEdge;
         if (isFilled)
         {
@@ -296,10 +301,10 @@ void renderMesh(const Mesh& mesh) {
         switch (activeShading)
         {
             case FLAT:
-                Shadings::flatShading(startEdge);
+                Shadings::flatShading(meshPtr->faces[i]);
                 break;
             case NONE:
-                Shadings::flatShading(startEdge);
+                Shadings::flatShading(meshPtr->faces[i]);
                 break;
             default:
                 break;
@@ -308,6 +313,9 @@ void renderMesh(const Mesh& mesh) {
         do {
 
             Vertex* v = currentEdge->origin;
+
+            if (activeShading == ShadingTypes::GOURAUD)
+                Shadings::gouraudShading(v, meshPtr);
 
             glColor3f(1.0f, 0.0f, 0.0f);
             //std::cout << "Rendering Vertex: (" << v->x << ", " << v->y << ", " << v->z << ")\n";
@@ -427,7 +435,7 @@ void drawScene(void) {
     glTranslatef(-centerX, -centerY, -centerZ);
 
     if (meshPtr != nullptr) {
-        renderMesh(*meshPtr);
+        renderMesh();
     }
 
     glFlush();

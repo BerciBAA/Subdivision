@@ -71,7 +71,47 @@ void Shadings::disableLighting(void) {
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globAmb);
 }
 
-void Shadings::flatShading(HalfEdge* startEdge) {
+void Shadings::flatShading(Face* f) {
+    std::array<float, 3> norms = calculateNormForFace(f);
+
+    // Set the normal for the triangle
+    glNormal3f(norms[0], norms[1], norms[2]);
+}
+
+void Shadings::gouraudShading(Vertex* v, Mesh* mesh) {
+
+    // TODO: calculate only once per subdivion and use dictionary datatype for better performance!!!
+    std::array<float, 3> vertexNorms = { 0.0f, 0.0f, 0.0f };
+
+    std::vector<Face*> neighborFaces;
+    for (const auto& hfe : mesh->halfEdges) {
+        if (hfe->origin == v && 
+            (std::find(neighborFaces.begin(), neighborFaces.end(), hfe->incidentFace) == neighborFaces.end() )) {
+                neighborFaces.push_back(hfe->incidentFace);
+        }
+    }
+
+    for (const auto& neighborFace : neighborFaces) {
+        std::array<float, 3> faceNorms = calculateNormForFace(neighborFace);
+        vertexNorms[0] += faceNorms[0];
+        vertexNorms[1] += faceNorms[1];
+        vertexNorms[2] += faceNorms[2];
+    }
+
+    float length = sqrt(vertexNorms[0] * vertexNorms[0] + vertexNorms[1] * vertexNorms[1] + vertexNorms[2] * vertexNorms[2]);
+    if (length > 0.0f) {
+        vertexNorms[0] /= length;
+        vertexNorms[1] /= length;
+        vertexNorms[2] /= length;
+    }
+
+    // Set the normal for the vertex
+    glNormal3f(vertexNorms[0], vertexNorms[1], vertexNorms[2]);
+}
+
+std::array<float, 3> Shadings::calculateNormForFace(Face* f) {
+    HalfEdge* startEdge = f->edge;
+
     Vertex* v1 = startEdge->origin;
     Vertex* v2 = startEdge->next->origin;
     Vertex* v3 = startEdge->next->next->origin;
@@ -98,6 +138,5 @@ void Shadings::flatShading(HalfEdge* startEdge) {
         nz /= length;
     }
 
-    // Set the normal for the triangle
-    glNormal3f(nx, ny, nz);
+    return {nx, ny, nz};
 }
