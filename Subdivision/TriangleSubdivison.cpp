@@ -20,6 +20,7 @@ void TriangleSubdivison::subdivide(Mesh* mesh, bool moveVertices)
             Vertex* movedVertex = moveVertex(vertex, mesh);
             newVertices.push_back(movedVertex);
         }
+        // TODO: delete from memory to prevent memory leak
         mesh->vertices = newVertices;
         std::cout << "Moved vertices!" << std::endl;
     }
@@ -39,6 +40,7 @@ void TriangleSubdivison::subdivide(Mesh* mesh, bool moveVertices)
         rebuildFace(f, mesh, newHalfEdges, newFaces, edgeVertexMap);
     }
 
+    // TODO: delete from memory to prevent memory leak
     mesh->halfEdges = newHalfEdges;
     mesh->faces = newFaces;
 

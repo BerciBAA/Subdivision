@@ -21,6 +21,7 @@
 #include "HalfEdge.h"
 #include "ButterflySubdivision.h"
 #include "LoopSubdivision.h"
+#include "Shadings.h"
 
 // Global variables for rotation angles
 
@@ -43,6 +44,8 @@ float viewRadius = 0.0f;
 
 Mesh* meshPtr = nullptr;
 
+ShadingTypes activeShading = FLAT;
+
 
 // CUSTOM UI COMPONENTS
 struct Button {
@@ -60,7 +63,7 @@ struct Button {
 std::vector<Button> navButtons;
 
 
-enum MenuState { MAIN_MENU, SUBDIVISION_MENU };
+enum MenuState { MAIN_MENU, SUBDIVISION_MENU, SHADING_MENU };
 MenuState menuState = MAIN_MENU;
 void setMenuState(MenuState newState);
 
@@ -73,7 +76,8 @@ std::vector<Button> mainMenuButtons = {
         std::cout << "Fill clicked!" << std::endl;
 
     } },
-    {"Subdivison", -0.45f, -0.0f, buttonYMin, buttonYMax, []() {setMenuState(SUBDIVISION_MENU); } } // Changes to SETTINGS_MENU
+    {"Subdivison", -0.45f, -0.0f, buttonYMin, buttonYMax, []() {setMenuState(SUBDIVISION_MENU); } }, // Changes to SETTINGS_MENU
+    {"Shadings", 0.05f, 0.45f, buttonYMin, buttonYMax, []() {setMenuState(SHADING_MENU); } } // Changes to SETTINGS_MENU
 };
 
 std::vector<Button> subdivisonMenuButtons = {
@@ -82,9 +86,23 @@ std::vector<Button> subdivisonMenuButtons = {
         LoopSubdivision subdivison = LoopSubdivision();
         subdivison.subdivide(meshPtr, true);
     }},
-    {"Butterfly", -0.25f, 0.25f, buttonYMin, buttonYMax, []() { 
+    {"Butterfly", -0.28f, 0.08f, buttonYMin, buttonYMax, []() { 
         ButterflySubdivision subdivison = ButterflySubdivision();
         subdivison.subdivide(meshPtr, false);
+    }}
+};
+
+std::vector<Button> shadingMenuButtons = {
+    {"Back", -0.95f, -0.65f, buttonYMin, buttonYMax, []() {setMenuState(MAIN_MENU); } },
+    {"None", -0.63f, -0.32f, buttonYMin, buttonYMax, []() {
+        activeShading = ShadingTypes::NONE;
+        Shadings::disableLighting();
+        glutPostRedisplay();
+    }},
+    {"Flat", -0.30f, 0.0f, buttonYMin, buttonYMax, []() {
+        activeShading = ShadingTypes::FLAT;
+        Shadings::setupLighting();
+        glutPostRedisplay();
     }}
 };
 
@@ -96,6 +114,9 @@ void updateNavBar() {
         break;
     case SUBDIVISION_MENU:
         navButtons = subdivisonMenuButtons;
+        break;
+    case SHADING_MENU:
+        navButtons = shadingMenuButtons;
         break;
     }
 }
@@ -272,14 +293,23 @@ void renderMesh(const Mesh& mesh) {
             glBegin(GL_LINE_LOOP);
         }
 
+        switch (activeShading)
+        {
+            case FLAT:
+                Shadings::flatShading(startEdge);
+                break;
+            case NONE:
+                Shadings::flatShading(startEdge);
+                break;
+            default:
+                break;
+        }
+
         do {
 
             Vertex* v = currentEdge->origin;
 
-            float red = (v->x + 1.0f) / 2.0f;   // Normalizálva 0 és 1 közé
-            float green = (v->y + 1.0f) / 2.0f;
-            float blue = (v->z + 1.0f) / 2.0f;
-            glColor3f(red, green, blue);
+            glColor3f(1.0f, 0.0f, 0.0f);
             //std::cout << "Rendering Vertex: (" << v->x << ", " << v->y << ", " << v->z << ")\n";
             glVertex3f(v->x, v->y, v->z);  // A vertex koordináták megadása
 
@@ -318,7 +348,10 @@ void mouseClick(int button, int state, int x, int y) {
 void drawNavBar(void) {
     glDisable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
+
+
     glPushMatrix();
+    glDisable(GL_LIGHTING);
     glLoadIdentity();
     glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 
@@ -371,7 +404,9 @@ void drawNavBar(void) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
     }
 
+    glEnable(GL_LIGHTING);
     glPopMatrix();
+
     glMatrixMode(GL_MODELVIEW);
     glEnable(GL_DEPTH_TEST);
 }
@@ -479,7 +514,7 @@ int main(int argc, char** argv)
 	glutInitWindowSize(500, 500);
 	glutInitWindowPosition(100, 100);
 
-	glutCreateWindow("square.cpp");
+	glutCreateWindow("subdivison:)");
 
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(resize);
@@ -492,6 +527,7 @@ int main(int argc, char** argv)
 	glewInit();
 
 	setup();
+    Shadings::setupLighting();
 
 	glutMainLoop();
 }

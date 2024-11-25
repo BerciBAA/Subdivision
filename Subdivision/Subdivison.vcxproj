@@ -22,6 +22,7 @@
     <ClCompile Include="ButterflySubdivision.cpp" />
     <ClCompile Include="HalfEdge.cpp" />
     <ClCompile Include="LoopSubdivision.cpp" />
+    <ClCompile Include="Shadings.cpp" />
     <ClCompile Include="Test.cpp" />
     <ClCompile Include="TriangleSubdivison.cpp" />
   </ItemGroup>
@@ -30,6 +31,7 @@
     <ClInclude Include="globals.h" />
     <ClInclude Include="HalfEdge.h" />
     <ClInclude Include="LoopSubdivision.h" />
+    <ClInclude Include="Shadings.h" />
     <ClInclude Include="TriangleSubdivison.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
