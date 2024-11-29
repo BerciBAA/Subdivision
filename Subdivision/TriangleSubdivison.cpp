@@ -2,6 +2,7 @@
 
 void TriangleSubdivison::subdivide(Mesh* mesh, bool moveVertices)
 {
+    std::cout << "starting subdivision process" << std::endl;
     std::unordered_map<HalfEdge*, Vertex*> edgeVertexMap;
 
     for (HalfEdge* he : mesh->halfEdges) {
@@ -12,6 +13,7 @@ void TriangleSubdivison::subdivide(Mesh* mesh, bool moveVertices)
             edgeVertexMap[he->twin] = edgeVertexMap[he]; // Share new vertex
         }
     }
+    std::cout << "created new vertices" << std::endl;
 
     // move old vertices
     if (moveVertices){
@@ -22,7 +24,7 @@ void TriangleSubdivison::subdivide(Mesh* mesh, bool moveVertices)
         }
         // TODO: delete from memory to prevent memory leak
         mesh->vertices = newVertices;
-        std::cout << "Moved vertices!" << std::endl;
+        std::cout << "moved old vertices" << std::endl;
     }
 
 
@@ -39,12 +41,17 @@ void TriangleSubdivison::subdivide(Mesh* mesh, bool moveVertices)
     for (Face* f : mesh->faces) {
         rebuildFace(f, mesh, newHalfEdges, newFaces, edgeVertexMap);
     }
+    std::cout << "built new faces" << std::endl;
 
     // TODO: delete from memory to prevent memory leak
     mesh->halfEdges = newHalfEdges;
     mesh->faces = newFaces;
 
     mesh->createTwinEdges();
+
+    Shadings::calculateNormals(mesh);
+
+    std::cout << "finished subdivison process" << std::endl << std::endl;
 }
 
 void TriangleSubdivison::rebuildFace(Face* face, Mesh* mesh, std::vector<HalfEdge*>& newHalfEdges, std::vector<Face*>& newFaces, std::unordered_map<HalfEdge*, Vertex*>& edgeVertexMap)

@@ -18,7 +18,7 @@
 #include <cmath>
 #include <functional>
 
-#include "HalfEdge.h"
+//#include "HalfEdge.h"
 #include "ButterflySubdivision.h"
 #include "LoopSubdivision.h"
 #include "Shadings.h"
@@ -43,6 +43,9 @@ float radius = 0.0f;
 float viewRadius = 0.0f;
 
 Mesh* meshPtr = nullptr;
+
+std::unordered_map<Vertex*, float[3]> vertexNormals;
+std::unordered_map<Face*, float[3]> faceNormals;
 
 ShadingTypes activeShading = FLAT;
 
@@ -83,10 +86,12 @@ std::vector<Button> mainMenuButtons = {
 std::vector<Button> subdivisonMenuButtons = {
     {"Back", -0.95f, -0.65f, buttonYMin, buttonYMax, []() {setMenuState(MAIN_MENU); } },
     {"Loop", -0.63f, -0.3f, buttonYMin, buttonYMax, []() {
+        std::cout << "\nLoop subdivison" << std::endl;
         LoopSubdivision subdivison = LoopSubdivision();
         subdivison.subdivide(meshPtr, true);
     }},
     {"Butterfly", -0.28f, 0.08f, buttonYMin, buttonYMax, []() { 
+        std::cout << "\nButterfly subdivison" << std::endl;
         ButterflySubdivision subdivison = ButterflySubdivision();
         subdivison.subdivide(meshPtr, false);
     }}
@@ -96,16 +101,19 @@ std::vector<Button> shadingMenuButtons = {
     {"Back", -0.95f, -0.65f, buttonYMin, buttonYMax, []() {setMenuState(MAIN_MENU); } },
     {"None", -0.63f, -0.38f, buttonYMin, buttonYMax, []() {
         activeShading = ShadingTypes::NONE;
+        std::cout << "Shading set to NONE" << std::endl;
         Shadings::disableLighting();
         glutPostRedisplay();
     }},
     {"Flat", -0.36f, -0.11f, buttonYMin, buttonYMax, []() {
         activeShading = ShadingTypes::FLAT;
+        std::cout << "Shading set to: FLAT" << std::endl;
         Shadings::setupLighting();
         glutPostRedisplay();
     }},
     {"Guro", -0.09f, 0.16f, buttonYMin, buttonYMax, []() {
         activeShading = ShadingTypes::GOURAUD;
+        std::cout << "Shading set to: GOURAUD" << std::endl;
         Shadings::setupLighting();
         glutPostRedisplay();
     }}
@@ -259,7 +267,6 @@ void loadOBJ(const std::string& filename, std::vector<std::vector<float>>& verti
         // Process face indices
         else if (token == "f") {
             std::vector<int> face;
-            int index;
             std::string vertexData;
             while (ss >> vertexData) {
                 int index = extractFirstNumber(vertexData);
@@ -469,7 +476,7 @@ void populateHalfEdgeStructure(const std::string& objFile) {
 
     std::cout << "Mesh created successfully:" << std::endl;
 
-    
+    Shadings::calculateNormals(meshPtr);
 
     //std::cout << meshPtr->toString();
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "HalfEdge.h"
 #include "globals.h"
+#include "Shadings.h"
 
 #include <unordered_map>
 #include <iostream>
