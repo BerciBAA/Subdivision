@@ -25,6 +25,8 @@
 
 // Global variables for rotation angles
 
+enum FillStatus { WIRE, FILL, WIREFILL };
+
 float angleX = 0.0f;
 float angleY = 0.0f;
 float angleZ = 0.0f;
@@ -32,7 +34,6 @@ float centerX = 0.0f, centerY = 0.0f, centerZ = 0.0f;
 float cameraX = 0.0f, cameraY = 0.0f, cameraZ = 5.0f;
 
 float mouseX = 0.0f, mouseY = 0.0f;
-bool isFilled = true;
 
 float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
 float maxX = FLT_MIN, maxY = FLT_MIN, maxZ = FLT_MIN;
@@ -48,13 +49,14 @@ std::unordered_map<Vertex*, float[3]> vertexNormals;
 std::unordered_map<Face*, float[3]> faceNormals;
 
 ShadingTypes activeShading = FLAT;
+FillStatus activeFillStatus = FillStatus::FILL;
 
 
 // CUSTOM UI COMPONENTS
 struct Button {
     std::string text;
     float xStart, xEnd, yStart, yEnd;
-    bool isHovered;
+    bool isHovered = false;
     std::function<void()> onClick;
 
     Button(const std::string& text, float xStart, float xEnd, float yStart, float yEnd,
@@ -66,7 +68,7 @@ struct Button {
 std::vector<Button> navButtons;
 
 
-enum MenuState { MAIN_MENU, SUBDIVISION_MENU, SHADING_MENU };
+enum MenuState { MAIN_MENU, FILL_MENU, SUBDIVISION_MENU, SHADING_MENU };
 MenuState menuState = MAIN_MENU;
 void setMenuState(MenuState newState);
 
@@ -74,13 +76,16 @@ float buttonYMin = 0.92f;
 float buttonYMax = 0.98f;
 
 std::vector<Button> mainMenuButtons = {
-    {"Wire/Fill", -0.95f, -0.5f, buttonYMin, buttonYMax, []() {
-        isFilled = !isFilled;
-        std::cout << "Fill clicked!" << std::endl;
+    {"Wire/Fill", -0.95f, -0.5f, buttonYMin, buttonYMax, []() {setMenuState(FILL_MENU); } },
+    {"Subdivison", -0.45f, -0.0f, buttonYMin, buttonYMax, []() {setMenuState(SUBDIVISION_MENU); } },
+    {"Shadings", 0.05f, 0.45f, buttonYMin, buttonYMax, []() {setMenuState(SHADING_MENU); } }
+};
 
-    } },
-    {"Subdivison", -0.45f, -0.0f, buttonYMin, buttonYMax, []() {setMenuState(SUBDIVISION_MENU); } }, // Changes to SETTINGS_MENU
-    {"Shadings", 0.05f, 0.45f, buttonYMin, buttonYMax, []() {setMenuState(SHADING_MENU); } } // Changes to SETTINGS_MENU
+std::vector<Button> fillMenuButtons = {
+    {"Back", -0.95f, -0.65f, buttonYMin, buttonYMax, []() {setMenuState(MAIN_MENU); }},
+    {"Wire", -0.63f, -0.38f, buttonYMin, buttonYMax, []() {activeFillStatus = WIRE; glutPostRedisplay();}},
+    {"Fill", -0.36f, -0.11f, buttonYMin, buttonYMax, []() {activeFillStatus = FILL; glutPostRedisplay();}},
+    {"Both", -0.09f, 0.16f, buttonYMin, buttonYMax, []() {activeFillStatus = WIREFILL; glutPostRedisplay();} }
 };
 
 std::vector<Button> subdivisonMenuButtons = {
@@ -124,6 +129,9 @@ void updateNavBar() {
     switch (menuState) {
     case MAIN_MENU:
         navButtons = mainMenuButtons;
+        break;
+    case FILL_MENU:
+        navButtons = fillMenuButtons;
         break;
     case SUBDIVISION_MENU:
         navButtons = subdivisonMenuButtons;
@@ -214,7 +222,6 @@ void keyInput(unsigned char key, int x, int y)
     case 'X': angleX -= 5.0f; break; // Rotate around X-axis (reverse)
     case 'Y': angleY -= 5.0f; break; // Rotate around Y-axis (reverse)
     case 'Z': angleZ -= 5.0f; break; // Rotate around Z-axis (reverse)
-    case 32: isFilled = !isFilled; break;
     case 27: exit(0); break;
     case '+': {
         paddingFactor += 0.1;
@@ -285,8 +292,8 @@ void renderMesh() {
 
     //srand(static_cast<unsigned>(time(0)));
 
-    for(int i = 0; i < meshPtr->faces.size(); i++) //mesh.faces.size()
-     {
+    for (int i = 0; i < meshPtr->faces.size(); i++) //mesh.faces.size()
+    {
         /*if (i % 2 == 0) {
             float red = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
             float green = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
@@ -297,42 +304,49 @@ void renderMesh() {
 
         HalfEdge* startEdge = meshPtr->faces[i]->edge;
         HalfEdge* currentEdge = startEdge;
-        if (isFilled)
-        {
-            glBegin(GL_TRIANGLES);
-        }
-        else {
-            glBegin(GL_LINE_LOOP);
-        }
 
-        switch (activeShading)
-        {
-            case FLAT:
-                Shadings::flatShading(meshPtr->faces[i]);
-                break;
-            case NONE:
-                Shadings::flatShading(meshPtr->faces[i]);
-                break;
-            default:
-                break;
-        }
-
+        // get vertices for face
+        // TODO: add support map to the data structure and use it everytime we need the vertices of a face
+        std::vector<Vertex*> vertices;
         do {
-
-            Vertex* v = currentEdge->origin;
-
-            if (activeShading == ShadingTypes::GOURAUD)
-                Shadings::gouraudShading(v, meshPtr);
-
-            glColor3f(1.0f, 0.0f, 0.0f);
-            //std::cout << "Rendering Vertex: (" << v->x << ", " << v->y << ", " << v->z << ")\n";
-            glVertex3f(v->x, v->y, v->z);  // A vertex koordináták megadása
-
+            vertices.push_back(currentEdge->origin);
 
             currentEdge = currentEdge->next;
         } while (currentEdge != startEdge);  // Visszatérünk a kezdõ élhez
 
-        glEnd();
+        // draw line if needed
+        if (activeFillStatus == WIRE || activeFillStatus == WIREFILL) {
+            glDisable(GL_LIGHTING);
+            glBegin(GL_LINE_LOOP);
+
+            for (Vertex* v : vertices) {
+                glColor3f(0.0f, 0.0f, 0.0f);
+                //std::cout << "Rendering Vertex: (" << v->x << ", " << v->y << ", " << v->z << ")\n";
+                glVertex3f(v->x, v->y, v->z);  // A vertex koordináták megadása
+            }
+
+            glEnd();
+            glEnable(GL_LIGHTING);
+        }
+
+        // draw triangles if needed
+        if (activeFillStatus == FILL || activeFillStatus == WIREFILL) {
+            glBegin(GL_TRIANGLES);
+
+            if (activeShading == FLAT || activeShading == NONE)
+                Shadings::flatShading(meshPtr->faces[i]);
+
+            for (Vertex* v : vertices) {
+                if (activeShading == ShadingTypes::GOURAUD)
+                    Shadings::gouraudShading(v, meshPtr);
+
+                glColor3f(1.0f, 0.0f, 0.0f);
+                //std::cout << "Rendering Vertex: (" << v->x << ", " << v->y << ", " << v->z << ")\n";
+                glVertex3f(v->x, v->y, v->z);  // A vertex koordináták megadása
+            }
+
+            glEnd();
+        }
     }
 }
 
@@ -355,6 +369,7 @@ void mouseClick(int button, int state, int x, int y) {
         for (auto& btn : navButtons) {
             if (btn.isHovered) {
                 btn.onClick();
+                break;
             }
         }
     }
